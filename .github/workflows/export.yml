@@ -80,4 +80,4 @@ jobs:
           --output "packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip"
 
       - name: Confirmar paquete exportado
-        run: ls -lh packages/${{ github.event.inputs.package_name }}
+        run: ls -lh "packages/${{ github.event.inputs.package_name }}"

@@ -29,6 +29,13 @@ jobs:
           echo "UUID resuelto: $deployment_uuid"
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
 
+      - name: Validar APP_URL_DEV
+        run: |
+          if [ -z "${{ vars.APP_URL_DEV }}" ]; then
+            echo "❌ Error: APP_URL_DEV no está definido. Verifica que esté configurado como variable en el entorno 'dev'."
+            exit 1
+          fi
+
       - name: Exportar paquete desde Appian Dev
         run: |
           curl --location --request POST "${{ vars.APP_URL_DEV }}/suite/deployment-management/v2/deployments" \

@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Crear directorio para el paquete exportado
-        run: mkdir -p packages/${{ github.event.inputs.package_name }}
+        run: mkdir -p "packages/${{ github.event.inputs.package_name }}"
 
       - name: Obtener UUID del paquete desde JSON local
         id: obtener_uuid
@@ -77,7 +77,7 @@ jobs:
           --header "appian-api-key: ${{ secrets.API_KEY }}" | jq -r '.packageZip')
           curl --location --request GET "$package_url" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
-          --output packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip
+          --output "packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip"
 
       - name: Confirmar paquete exportado
         run: ls -lh packages/${{ github.event.inputs.package_name }}

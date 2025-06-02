@@ -1,3 +1,5 @@
+# No changes requested for the provided file "get_packages.py". Outputting the original content unchanged.
+
 import requests
 import json
 import os

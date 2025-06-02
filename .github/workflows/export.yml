@@ -29,17 +29,17 @@ jobs:
           echo "UUID resuelto: $deployment_uuid"
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
 
-      - name: Validar APP_URL_DEV
+      - name: Validar URL
         run: |
-          if [ -z "${{ vars.APP_URL_DEV }}" ]; then
-            echo "❌ Error: APP_URL_DEV no está definido. Verifica que esté configurado como variable en el entorno 'dev'."
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido. Verifica que esté configurado como variable en el entorno."
             exit 1
           fi
 
       - name: Exportar paquete desde Appian Dev
         run: |
-          curl --location --request POST "${{ vars.APP_URL_DEV }}/suite/deployment-management/v2/deployments" \
-          --header "appian-api-key: ${{ secrets.API_KEY_DEV }}" \
+          curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
           --header "Action-Type: export" \
           --form 'json={
             "exportType": "package",
@@ -61,8 +61,8 @@ jobs:
           status="IN_PROGRESS"
           while [ "$status" == "IN_PROGRESS" ]; do
             sleep 10
-            response=$(curl --location --request GET "${{ vars.APP_URL_DEV }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
-            --header "appian-api-key: ${{ secrets.API_KEY_DEV }}")
+            response=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}")
             status=$(echo $response | jq -r '.status')
             echo "Estado actual: $status"
           done
@@ -73,10 +73,10 @@ jobs:
 
       - name: Descargar paquete exportado
         run: |
-          package_url=$(curl --location --request GET "${{ vars.APP_URL_DEV }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
-          --header "appian-api-key: ${{ secrets.API_KEY_DEV }}" | jq -r '.packageZip')
+          package_url=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" | jq -r '.packageZip')
           curl --location --request GET "$package_url" \
-          --header "appian-api-key: ${{ secrets.API_KEY_DEV }}" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
           --output packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip
 
       - name: Confirmar paquete exportado

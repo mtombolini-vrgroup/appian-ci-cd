@@ -25,6 +25,18 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar existencia del paquete
+        run: |
+          echo "Verificando existencia del archivo deployments/dev/${{ github.event.inputs.package_name }}"
+          if [ ! -f "deployments/dev/${{ github.event.inputs.package_name }}" ]; then
+            echo "❌ El archivo no existe: deployments/dev/${{ github.event.inputs.package_name }}"
+            exit 1
+          fi
+
       - name: Ejecutar importación del paquete en QA
         run: |
           PACKAGE_FILENAME="${{ github.event.inputs.package_name }}"

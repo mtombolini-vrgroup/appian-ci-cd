@@ -81,3 +81,9 @@ jobs:
 
       - name: Confirmar paquete exportado
         run: ls -lh "packages/${{ github.event.inputs.package_name }}"
+
+      - name: Subir artefacto del paquete exportado
+        uses: actions/upload-artifact@v4
+        with:
+          name: paquete-${{ github.event.inputs.package_name }}
+          path: packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip

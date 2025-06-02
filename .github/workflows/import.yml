@@ -1,5 +1,3 @@
-
-
 name: Importar paquete a Appian QA
 
 on:
@@ -21,16 +19,16 @@ jobs:
     steps:
       - name: Verificar variables requeridas
         run: |
-          if [ -z "${{ vars.APP_URL_QA }}" ]; then
-            echo "❌ Error: APP_URL_QA no está definido."
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
             exit 1
           fi
 
       - name: Ejecutar importación del paquete en QA
         run: |
           if [ -n "${{ github.event.inputs.customization_file }}" ]; then
-            curl --location --request POST "${{ vars.APP_URL_QA }}/suite/deployment-management/v2/deployments" \
-            --header "appian-api-key: ${{ secrets.API_KEY_QA }}" \
+            curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}" \
             --header "Action-Type: import" \
             --form "json={
               \"importType\": \"url\",
@@ -40,8 +38,8 @@ jobs:
             }" \
             --form "importCustomization=@${{ github.event.inputs.customization_file }}"
           else
-            curl --location --request POST "${{ vars.APP_URL_QA }}/suite/deployment-management/v2/deployments" \
-            --header "appian-api-key: ${{ secrets.API_KEY_QA }}" \
+            curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}" \
             --header "Action-Type: import" \
             --form "json={
               \"importType\": \"url\",

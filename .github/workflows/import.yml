@@ -1,0 +1,52 @@
+
+
+name: Importar paquete a Appian QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_url:
+        description: 'URL del paquete exportado (zip)'
+        required: true
+      description:
+        description: 'Descripción del import (opcional)'
+        required: false
+      customization_file:
+        description: 'Ruta al archivo de customization .properties (opcional)'
+        required: false
+
+jobs:
+  importar-paquete:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar variables requeridas
+        run: |
+          if [ -z "${{ vars.APP_URL_QA }}" ]; then
+            echo "❌ Error: APP_URL_QA no está definido."
+            exit 1
+          fi
+
+      - name: Ejecutar importación del paquete en QA
+        run: |
+          if [ -n "${{ github.event.inputs.customization_file }}" ]; then
+            curl --location --request POST "${{ vars.APP_URL_QA }}/suite/deployment-management/v2/deployments" \
+            --header "appian-api-key: ${{ secrets.API_KEY_QA }}" \
+            --header "Action-Type: import" \
+            --form "json={
+              \"importType\": \"url\",
+              \"importPackageUrl\": \"${{ github.event.inputs.package_url }}\",
+              \"name\": \"Imported Package\",
+              \"description\": \"${{ github.event.inputs.description }}\"
+            }" \
+            --form "importCustomization=@${{ github.event.inputs.customization_file }}"
+          else
+            curl --location --request POST "${{ vars.APP_URL_QA }}/suite/deployment-management/v2/deployments" \
+            --header "appian-api-key: ${{ secrets.API_KEY_QA }}" \
+            --header "Action-Type: import" \
+            --form "json={
+              \"importType\": \"url\",
+              \"importPackageUrl\": \"${{ github.event.inputs.package_url }}\",
+              \"name\": \"Imported Package\",
+              \"description\": \"${{ github.event.inputs.description }}\"
+            }"
+          fi

@@ -16,6 +16,7 @@ on:
 jobs:
   importar-paquete:
     runs-on: ubuntu-latest
+    environment: qa
     steps:
       - name: Verificar variables requeridas
         run: |

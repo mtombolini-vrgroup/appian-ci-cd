@@ -1,0 +1,37 @@
+
+name: Despliegue completo
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Nombre del paquete .zip"
+        required: true
+      description:
+        description: "Descripción del despliegue"
+        required: false
+      customization_file:
+        description: "Archivo .properties de customization (opcional)"
+        required: false
+
+jobs:
+  exportar:
+    uses: ./.github/workflows/export.yml
+    with:
+      package_name: ${{ github.event.inputs.package_name }}
+      description: ${{ github.event.inputs.description }}
+    secrets: inherit
+
+  importar:
+    needs: exportar
+    uses: ./.github/workflows/import.yml
+    with:
+      package_name: ${{ github.event.inputs.package_name }}
+      description: ${{ github.event.inputs.description }}
+      customization_file: ${{ github.event.inputs.customization_file }}
+    secrets: inherit
+
+  # En el futuro puedes agregar acá el promote-to-prod.yml también:
+  # producir:
+  #   needs: importar
+  #   uses: ./.github/workflows/promote-to-prod.yml

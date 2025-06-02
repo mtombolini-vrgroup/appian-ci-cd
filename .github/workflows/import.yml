@@ -4,8 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       package_name:
-        description: 'Nombre del archivo de paquete exportado (sin ruta)'
+        description: 'Selecciona el archivo de paquete exportado'
         required: true
+        type: choice
+        options:
+          - Package 1.zip
+          # Puedes agregar más opciones aquí si hay más paquetes disponibles
       description:
         description: 'Descripción del import (opcional)'
         required: false

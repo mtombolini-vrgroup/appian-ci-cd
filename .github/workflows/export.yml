@@ -3,11 +3,11 @@ name: Exportar Paquete desde Appian Dev
 on:
   workflow_dispatch:
     inputs:
-      deployment_uuid:
-        description: 'UUID del paquete exportado desde Appian Dev (deployment)'
+      app_name:
+        description: 'Nombre de la aplicación Appian'
         required: true
       package_name:
-        description: 'Nombre para guardar el paquete exportado (sin extensión .zip)'
+        description: 'Nombre del paquete a exportar'
         required: true
       description:
         description: 'Descripción del despliegue (opcional)'
@@ -25,6 +25,13 @@ jobs:
       - name: Crear directorio para el paquete exportado
         run: mkdir -p packages/${{ github.event.inputs.package_name }}
 
+      - name: Obtener UUID del paquete desde JSON local
+        id: obtener_uuid
+        run: |
+          deployment_uuid=$(jq -r '.["${{ github.event.inputs.app_name }}"]["${{ github.event.inputs.package_name }}"]' config/packages_result.json)
+          echo "UUID resuelto: $deployment_uuid"
+          echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
+
       - name: Exportar paquete desde Appian Dev
         run: |
           curl --location --request POST "${{ vars.APP_URL_DEV }}/suite/deployment-management/v2/deployments" \
@@ -32,7 +39,7 @@ jobs:
           --header "Action-Type: export" \
           --form 'json={
             "exportType": "package",
-            "uuids": ["${{ github.event.inputs.deployment_uuid }}"],
+            "uuids": ["${{ steps.obtener_uuid.outputs.deployment_uuid }}"],
             "name": "${{ github.event.inputs.package_name }}",
             "description": "${{ github.event.inputs.description }}"
           }' \

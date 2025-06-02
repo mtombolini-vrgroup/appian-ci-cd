@@ -27,25 +27,29 @@ jobs:
 
       - name: Ejecutar importación del paquete en QA
         run: |
+          PACKAGE_FILENAME=$(basename "${{ github.event.inputs.package_url }}")
+          curl --location --request GET "${{ github.event.inputs.package_url }}" --output "$PACKAGE_FILENAME"
+
           if [ -n "${{ github.event.inputs.customization_file }}" ]; then
             curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
             --header "appian-api-key: ${{ secrets.API_KEY }}" \
             --header "Action-Type: import" \
             --form "json={
-              \"importType\": \"url\",
-              \"importPackageUrl\": \"${{ github.event.inputs.package_url }}\",
               \"name\": \"Imported Package\",
-              \"description\": \"${{ github.event.inputs.description }}\"
+              \"description\": \"${{ github.event.inputs.description }}\",
+              \"packageFileName\": \"$PACKAGE_FILENAME\",
+              \"customizationFileName\": \"$(basename ${{ github.event.inputs.customization_file }})\"
             }" \
-            --form "importCustomization=@${{ github.event.inputs.customization_file }}"
+            --form "packageFileName=@$PACKAGE_FILENAME" \
+            --form "customizationFileName=@${{ github.event.inputs.customization_file }}"
           else
             curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
             --header "appian-api-key: ${{ secrets.API_KEY }}" \
             --header "Action-Type: import" \
             --form "json={
-              \"importType\": \"url\",
-              \"importPackageUrl\": \"${{ github.event.inputs.package_url }}\",
               \"name\": \"Imported Package\",
-              \"description\": \"${{ github.event.inputs.description }}\"
-            }"
+              \"description\": \"${{ github.event.inputs.description }}\",
+              \"packageFileName\": \"$PACKAGE_FILENAME\"
+            }" \
+            --form "packageFileName=@$PACKAGE_FILENAME"
           fi

@@ -3,8 +3,8 @@ name: Importar paquete a Appian QA
 on:
   workflow_dispatch:
     inputs:
-      package_url:
-        description: 'URL del paquete exportado (zip)'
+      package_path:
+        description: 'Ruta al archivo del paquete exportado (zip en el repo)'
         required: true
       description:
         description: 'Descripción del import (opcional)'
@@ -27,9 +27,7 @@ jobs:
 
       - name: Ejecutar importación del paquete en QA
         run: |
-          PACKAGE_FILENAME=$(basename "${{ github.event.inputs.package_url }}")
-          curl --location --request GET "${{ github.event.inputs.package_url }}" --output "$PACKAGE_FILENAME"
-
+          PACKAGE_FILENAME=$(basename "${{ github.event.inputs.package_path }}")
           if [ -n "${{ github.event.inputs.customization_file }}" ]; then
             curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
             --header "appian-api-key: ${{ secrets.API_KEY }}" \
@@ -40,7 +38,7 @@ jobs:
               \"packageFileName\": \"$PACKAGE_FILENAME\",
               \"customizationFileName\": \"$(basename ${{ github.event.inputs.customization_file }})\"
             }" \
-            --form "packageFileName=@$PACKAGE_FILENAME" \
+            --form "packageFileName=@${{ github.event.inputs.package_path }}" \
             --form "customizationFileName=@${{ github.event.inputs.customization_file }}"
           else
             curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
@@ -51,5 +49,5 @@ jobs:
               \"description\": \"${{ github.event.inputs.description }}\",
               \"packageFileName\": \"$PACKAGE_FILENAME\"
             }" \
-            --form "packageFileName=@$PACKAGE_FILENAME"
+            --form "packageFileName=@${{ github.event.inputs.package_path }}"
           fi

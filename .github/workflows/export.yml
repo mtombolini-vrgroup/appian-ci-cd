@@ -3,9 +3,6 @@ name: Exportar Paquete desde Appian Dev
 on:
   workflow_dispatch:
     inputs:
-      app_name:
-        description: 'Nombre de la aplicación Appian'
-        required: true
       package_name:
         description: 'Nombre del paquete a exportar'
         required: true
@@ -28,7 +25,7 @@ jobs:
       - name: Obtener UUID del paquete desde JSON local
         id: obtener_uuid
         run: |
-          deployment_uuid=$(jq -r '.["${{ github.event.inputs.app_name }}"]["${{ github.event.inputs.package_name }}"]' config/packages_result.json)
+          deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ github.event.inputs.package_name }}")) | $app["${{ github.event.inputs.package_name }}"]' config/packages_result.json)
           echo "UUID resuelto: $deployment_uuid"
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
 

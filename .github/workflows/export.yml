@@ -90,6 +90,7 @@ jobs:
 
       - name: Guardar paquete en el repositorio
         run: |
+          mkdir -p deployments/dev
           cp "packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip" "deployments/dev/${{ github.event.inputs.package_name }}.zip"
 
       - name: Hacer commit del paquete exportado

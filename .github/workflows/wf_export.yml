@@ -12,6 +12,16 @@ on:
     secrets:
       API_KEY:
         required: true
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Nombre lógico del paquete (sin .zip)"
+        required: true
+        type: string
+      description:
+        description: "Descripción del paquete"
+        required: false
+        type: string
 
 jobs:
   export-package:

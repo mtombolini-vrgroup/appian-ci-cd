@@ -2,6 +2,10 @@ name: Listar paquetes por aplicación desde Appian
 
 on:
   workflow_dispatch:
+  workflow_call:
+    secrets:
+      API_KEY:
+        required: true
 
 jobs:
   listar-paquetes:

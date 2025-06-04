@@ -1,0 +1,58 @@
+name: Listar paquetes por aplicación desde Appian
+
+on:
+  workflow_dispatch:
+
+jobs:
+  listar-paquetes:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar URL
+        run: |
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
+            exit 1
+          fi
+
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Consultar paquetes de aplicaciones
+        run: |
+          echo "{}" > config/packages_result.json
+          for row in $(jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' config/apps_config.json); do
+            app_name=$(echo $row | cut -d '=' -f 1)
+            app_uuid=$(echo $row | cut -d '=' -f 2)
+            echo "🔍 Consultando paquetes para $app_name ($app_uuid)..."
+            response=$(curl --silent --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/applications/$app_uuid/packages" \
+              --header "appian-api-key: ${{ secrets.API_KEY }}" \
+              --header "Content-Type: application/json")
+
+            if [ "$(echo "$response" | jq -r '.packages')" != "null" ]; then
+              echo "$response" | jq -r --arg app "$app_name" '
+                .packages | map({(.name): .uuid}) | add | {($app): .}
+              ' > tmp.json
+
+              jq -s 'add' config/packages_result.json tmp.json > merged.json
+              mv merged.json config/packages_result.json
+            else
+              echo "❌ Error consultando $app_name. Respuesta:"
+              echo "$response"
+            fi
+          done
+
+      - name: Ver contenido final
+        run: cat config/packages_result.json
+
+      - name: Subir archivo de salida
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-result
+          path: config/packages_result.json

@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       package_name:
-        description: 'Nombre del paquete a exportar'
+        description: "Nombre lógico del paquete (no el archivo .zip)"
         required: true
       description:
-        description: 'Descripción del despliegue (opcional)'
+        description: "Descripción del despliegue"
         required: false
 
 jobs:
@@ -32,7 +32,7 @@ jobs:
       - name: Validar URL
         run: |
           if [ -z "${{ vars.URL }}" ]; then
-            echo "❌ Error: URL no está definido. Verifica que esté configurado como variable en el entorno."
+            echo "❌ Error: URL no está definido."
             exit 1
           fi
 

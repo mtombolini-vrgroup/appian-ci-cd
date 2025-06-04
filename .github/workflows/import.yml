@@ -4,17 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       package_name:
-        description: 'Selecciona el archivo de paquete exportado'
+        description: 'Nombre lógico del paquete (no el archivo .zip)'
         required: true
-        type: choice
-        options:
-          - Package 1.zip
-          # Puedes agregar más opciones aquí si hay más paquetes disponibles
       description:
-        description: 'Descripción del import (opcional)'
-        required: false
-      customization_file:
-        description: 'Ruta al archivo de customization .properties (opcional)'
+        description: 'Descripción del despliegue'
         required: false
 
 jobs:
@@ -22,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: qa
     steps:
-      - name: Verificar variables requeridas
+      - name: Validar URL
         run: |
           if [ -z "${{ vars.URL }}" ]; then
             echo "❌ Error: URL no está definido."
@@ -35,15 +28,15 @@ jobs:
 
       - name: Verificar existencia del paquete
         run: |
-          echo "Verificando existencia del archivo deployments/dev/${{ github.event.inputs.package_name }}"
-          if [ ! -f "deployments/dev/${{ github.event.inputs.package_name }}" ]; then
-            echo "❌ El archivo no existe: deployments/dev/${{ github.event.inputs.package_name }}"
+          echo "Verificando existencia del archivo deployments/dev/${{ github.event.inputs.package_name }}.zip"
+          if [ ! -f "deployments/dev/${{ github.event.inputs.package_name }}.zip" ]; then
+            echo "❌ El archivo no existe: deployments/dev/${{ github.event.inputs.package_name }}.zip"
             exit 1
           fi
 
       - name: Ejecutar importación del paquete en QA
         run: |
-          PACKAGE_FILENAME="${{ github.event.inputs.package_name }}"
+          PACKAGE_FILENAME="${{ github.event.inputs.package_name }}.zip"
           if [ -n "${{ github.event.inputs.customization_file }}" ]; then
             curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
             --header "appian-api-key: ${{ secrets.API_KEY }}" \

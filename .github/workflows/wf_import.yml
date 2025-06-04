@@ -1,0 +1,56 @@
+name: Importar paquete Appian (reutilizable)
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        required: true
+        type: string
+      description:
+        required: false
+        type: string
+    secrets:
+      API_KEY:
+        required: true
+
+jobs:
+  importar-paquete:
+    runs-on: ubuntu-latest
+    environment: qa
+
+    steps:
+      - name: Validar URL
+        run: |
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
+            exit 1
+          fi
+
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar existencia del paquete
+        run: |
+          echo "Verificando existencia del archivo deployments/dev/${{ inputs.package_name }}.zip"
+          if [ ! -f "deployments/dev/${{ inputs.package_name }}.zip" ]; then
+            echo "❌ El archivo no existe: deployments/dev/${{ inputs.package_name }}.zip"
+            exit 1
+          fi
+
+      - name: Ejecutar importación del paquete en QA
+        run: |
+          PACKAGE_FILENAME="${{ inputs.package_name }}.zip"
+          curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
+          --header "Action-Type: import" \
+          --form "json={
+            \"name\": \"Imported Package\",
+            \"description\": \"${{ inputs.description }}\",
+            \"packageFileName\": \"$PACKAGE_FILENAME\"
+          }" \
+          --form "packageFileName=@deployments/dev/${PACKAGE_FILENAME}"
+
+      - name: Confirmar importación
+        run: echo "✅ Importación completada para el paquete ${{ inputs.package_name }}"

@@ -1,0 +1,29 @@
+name: Despliegue completo a QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Nombre lógico del paquete (sin .zip)"
+        required: true
+      description:
+        description: "Descripción del despliegue"
+        required: false
+
+jobs:
+  exportar:
+    uses: ./.github/workflows/wf_export.yml
+    with:
+      package_name: ${{ inputs.package_name }}
+      description: ${{ inputs.description }}
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}
+
+  importar:
+    needs: exportar
+    uses: ./.github/workflows/wf_import.yml
+    with:
+      package_name: ${{ inputs.package_name }}
+      description: ${{ inputs.description }}
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}

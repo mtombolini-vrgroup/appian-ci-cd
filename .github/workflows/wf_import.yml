@@ -9,6 +9,9 @@ on:
       description:
         required: false
         type: string
+      environment_name:
+        required: true
+        type: string
     secrets:
       API_KEY:
         required: true
@@ -16,7 +19,8 @@ on:
 jobs:
   importar-paquete:
     runs-on: ubuntu-latest
-    environment: qa
+    environment:
+      name: ${{ inputs.environment_name }}
 
     steps:
       - name: Validar URL

@@ -12,6 +12,16 @@ on:
     secrets:
       API_KEY:
         required: true
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Nombre lógico del paquete (sin .zip)"
+        required: true
+        type: string
+      description:
+        description: "Descripción del paquete"
+        required: false
+        type: string
 
 jobs:
   export-package:
@@ -21,6 +31,9 @@ jobs:
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
+
+      - name: Listar paquetes antes de exportar
+        uses: ./.github/workflows/wf_list_packages.yml
 
       - name: Crear directorio para el paquete exportado
         run: mkdir -p "packages/${{ inputs.package_name }}"

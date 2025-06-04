@@ -20,7 +20,7 @@ jobs:
     secrets:
       API_KEY: ${{ secrets.API_KEY }}
 
-  importar:
+  importar_qa:
     needs: exportar
     uses: ./.github/workflows/wf_import.yml
     with:
@@ -31,7 +31,7 @@ jobs:
       API_KEY: ${{ secrets.API_KEY }}
 
   importar_prod:
-    needs: importar
+    needs: importar_qa
     uses: ./.github/workflows/wf_import.yml
     with:
       package_name: ${{ inputs.package_name }}

@@ -49,6 +49,11 @@ jobs:
             exit 1
           fi
 
+      - name: Listar contenido del directorio de paquetes
+        run: |
+          echo "Contenido de deployments/dev:"
+          ls -lh deployments/dev
+
       - name: Ejecutar importación del paquete en QA
         run: |
           PACKAGE_FILENAME="${{ inputs.package_name }}.zip"

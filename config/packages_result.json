@@ -1,13 +1,1 @@
-{
-  "cicd_manager": {
-    "Dev-QA test": "36e8dd33-5b07-47fd-a1eb-7bd63e2a0e4b",
-    "DEV_QA_test": "ed1efe17-cba1-4079-a500-f99dc92f2478",
-    "Package Demo 2": "82cf0241-2365-47ff-ab29-f45d215d9b9a",
-    "Package Demo 1": "67bccb53-0057-4982-bb95-1dcc56f9793f",
-    "Interfaz Solicitud": "4b111330-17fa-4905-bc0e-9259ed754d44",
-    "Deploy Dev (1.1/2)": "1441c5f1-eaa6-467d-acbe-a69e8c425a0e",
-    "Package Deploy Dev 1/2": "4de4e0a5-8d42-4ccc-9bae-1f35ceaf2a72",
-    "Base de datos": "91f728e5-99f1-4060-bb39-f7d8232633a0",
-    "Package 1": "94c3dd9f-73b8-4a16-a3ff-7e2704ca1a90"
-  }
-}
+{}

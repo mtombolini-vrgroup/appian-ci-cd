@@ -1,5 +1,5 @@
 
-name: Despliegue completo
+name: Exportar y Proponer PR hacia QA
 
 on:
   workflow_dispatch:
@@ -10,28 +10,97 @@ on:
       description:
         description: "Descripción del despliegue"
         required: false
-      customization_file:
-        description: "Archivo .properties de customization (opcional)"
-        required: false
 
 jobs:
-  exportar:
-    uses: ./.github/workflows/export.yml
-    with:
-      package_name: ${{ github.event.inputs.package_name }}
-      description: ${{ github.event.inputs.description }}
-    secrets: inherit
+  exportar-y-generar-pr:
+    runs-on: ubuntu-latest
 
-  importar:
-    needs: exportar
-    uses: ./.github/workflows/import.yml
-    with:
-      package_name: ${{ github.event.inputs.package_name }}
-      description: ${{ github.event.inputs.description }}
-      customization_file: ${{ github.event.inputs.customization_file }}
-    secrets: inherit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  # En el futuro puedes agregar acá el promote-to-prod.yml también:
-  # producir:
-  #   needs: importar
-  #   uses: ./.github/workflows/promote-to-prod.yml
+      - name: Crear directorio para el paquete exportado
+        run: mkdir -p "packages/${{ github.event.inputs.package_name }}"
+
+      - name: Obtener UUID del paquete desde JSON local
+        id: obtener_uuid
+        run: |
+          deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ github.event.inputs.package_name }}")) | $app["${{ github.event.inputs.package_name }}"]' config/packages_result.json)
+          echo "UUID resuelto: $deployment_uuid"
+          echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
+
+      - name: Validar URL
+        run: |
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
+            exit 1
+          fi
+
+      - name: Exportar paquete desde Appian Dev
+        run: | 
+          curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
+          --header "Action-Type: export" \
+          --form 'json={
+            "exportType": "package",
+            "uuids": ["${{ steps.obtener_uuid.outputs.deployment_uuid }}"],
+            "name": "${{ github.event.inputs.package_name }}",
+            "description": "${{ github.event.inputs.description }}"
+          }' \
+          --output export_response.json
+
+      - name: Extraer UUID de la exportación
+        id: extract_uuid
+        run: |
+          export_uuid=$(jq -r '.uuid' export_response.json)
+          echo "UUID de exportación: $export_uuid"
+          echo "export_uuid=$export_uuid" >> $GITHUB_OUTPUT
+
+      - name: Esperar a que la exportación se complete
+        run: |
+          status="IN_PROGRESS"
+          while [ "$status" == "IN_PROGRESS" ]; do
+            sleep 10
+            response=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}")
+            status=$(echo $response | jq -r '.status')
+            echo "Estado actual: $status"
+          done
+          if [ "$status" != "COMPLETED" ]; then
+            echo "La exportación falló con estado: $status"
+            exit 1
+          fi
+
+      - name: Descargar paquete exportado
+        run: |
+          package_url=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" | jq -r '.packageZip')
+          curl --location --request GET "$package_url" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
+          --output "packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip"
+
+      - name: Guardar paquete en el repositorio
+        run: |
+          mkdir -p deployments/dev
+          cp "packages/${{ github.event.inputs.package_name }}/${{ github.event.inputs.package_name }}.zip" "deployments/dev/${{ github.event.inputs.package_name }}.zip"
+
+      - name: Crear rama release y hacer commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -b release/${{ github.event.inputs.package_name }}
+          git add deployments/dev/${{ github.event.inputs.package_name }}.zip
+          git commit -m "Release package ${{ github.event.inputs.package_name }}"
+          git push origin release/${{ github.event.inputs.package_name }}
+
+      - name: Crear Pull Request hacia QA
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Promoción a QA: ${{ github.event.inputs.package_name }}"
+          body: |
+            Se exportó el paquete `${{ github.event.inputs.package_name }}` desde Appian Dev.
+            Validar funcionalidad y aprobar PR para despliegue a QA.
+          base: qa
+          branch: release/${{ github.event.inputs.package_name }}
+          delete-branch: false

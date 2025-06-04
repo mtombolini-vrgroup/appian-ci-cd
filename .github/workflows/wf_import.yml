@@ -31,6 +31,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Sincronizar último commit del repositorio
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "github-actions"
+          git pull origin $(git rev-parse --abbrev-ref HEAD)
+
       - name: Verificar existencia del paquete
         run: |
           echo "Verificando existencia del archivo deployments/dev/${{ inputs.package_name }}.zip"

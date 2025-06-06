@@ -3,6 +3,17 @@
 name: Exportar aplicación Appian
 
 on:
+  workflow_call:
+    inputs:
+      application_uuid:
+        required: true
+        type: string
+      description:
+        required: false
+        type: string
+    secrets:
+      API_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       application_uuid:

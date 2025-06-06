@@ -103,6 +103,17 @@ jobs:
           fi
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
 
+      - name: Definir nombre para exportación
+        id: definir_nombre_export
+        run: |
+          if [ "${{ inputs.export_type }}" == "package" ]; then
+            export_name="${{ inputs.package_name }}"
+          else
+            export_name="Export App - ${{ inputs.application_uuid }}"
+          fi
+          echo "Nombre para exportación: $export_name"
+          echo "export_name=$export_name" >> $GITHUB_OUTPUT
+
       - name: Validar URL
         run: |
           if [ -z "${{ vars.URL }}" ]; then
@@ -118,7 +129,7 @@ jobs:
           --form 'json={
             "exportType": "${{ inputs.export_type }}",
             "uuids": ["${{ steps.obtener_uuid.outputs.deployment_uuid }}"],
-            "name": "${{ inputs.package_name }}",
+            "name": "${{ steps.definir_nombre_export.outputs.export_name }}",
             "description": "${{ inputs.description }}"
           }' \
           --output export_response.json

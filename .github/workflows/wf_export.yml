@@ -4,7 +4,10 @@ on:
   workflow_call:
     inputs:
       package_name:
-        required: true
+        required: false
+        type: string
+      application_uuid:
+        required: false
         type: string
       description:
         required: false
@@ -21,7 +24,11 @@ on:
     inputs:
       package_name:
         description: "Nombre lógico del paquete (sin .zip)"
-        required: true
+        required: false
+        type: string
+      application_uuid:
+        description: "UUID de la aplicación (solo para export_type=application)"
+        required: false
         type: string
       description:
         description: "Descripción del paquete"
@@ -84,11 +91,16 @@ jobs:
       - name: Crear directorio para el paquete exportado
         run: mkdir -p "packages/${{ inputs.package_name }}"
 
-      - name: Obtener UUID del paquete desde JSON local
+      - name: Obtener UUID para exportación
         id: obtener_uuid
         run: |
-          deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ inputs.package_name }}")) | $app["${{ inputs.package_name }}"]' config/packages_result.json)
-          echo "UUID resuelto: $deployment_uuid"
+          if [ "${{ inputs.export_type }}" == "package" ]; then
+            deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ inputs.package_name }}")) | $app["${{ inputs.package_name }}"]' config/packages_result.json)
+            echo "UUID de paquete resuelto: $deployment_uuid"
+          else
+            deployment_uuid="${{ inputs.application_uuid }}"
+            echo "UUID de aplicación recibido: $deployment_uuid"
+          fi
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
 
       - name: Validar URL

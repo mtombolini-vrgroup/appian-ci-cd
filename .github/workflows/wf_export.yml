@@ -4,19 +4,11 @@ on:
   workflow_call:
     inputs:
       package_name:
-        required: false
-        type: string
-      application_uuid:
-        required: false
+        required: true
         type: string
       description:
         required: false
         type: string
-      export_type:
-        description: "Tipo de exportación"
-        required: false
-        type: string
-        default: package
     secrets:
       API_KEY:
         required: true
@@ -24,24 +16,12 @@ on:
     inputs:
       package_name:
         description: "Nombre lógico del paquete (sin .zip)"
-        required: false
-        type: string
-      application_uuid:
-        description: "UUID de la aplicación (solo para export_type=application)"
-        required: false
+        required: true
         type: string
       description:
         description: "Descripción del paquete"
         required: false
         type: string
-      export_type:
-        description: "Tipo de exportación"
-        required: false
-        type: choice
-        options:
-          - package
-          - application
-        default: package
 
 jobs:
   export-package:
@@ -89,30 +69,14 @@ jobs:
           done
 
       - name: Crear directorio para el paquete exportado
-        run: mkdir -p "packages/${{ steps.definir_nombre_export.outputs.export_name }}"
+        run: mkdir -p "packages/${{ inputs.package_name }}"
 
-      - name: Obtener UUID para exportación
+      - name: Obtener UUID del paquete desde JSON local
         id: obtener_uuid
         run: |
-          if [ "${{ inputs.export_type }}" == "package" ]; then
-            deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ inputs.package_name }}")) | $app["${{ inputs.package_name }}"]' config/packages_result.json)
-            echo "UUID de paquete resuelto: $deployment_uuid"
-          else
-            deployment_uuid="${{ inputs.application_uuid }}"
-            echo "UUID de aplicación recibido: $deployment_uuid"
-          fi
+          deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ inputs.package_name }}")) | $app["${{ inputs.package_name }}"]' config/packages_result.json)
+          echo "UUID resuelto: $deployment_uuid"
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
-
-      - name: Definir nombre para exportación
-        id: definir_nombre_export
-        run: |
-          if [ "${{ inputs.export_type }}" == "package" ]; then
-            export_name="${{ inputs.package_name }}"
-          else
-            export_name="Export App - ${{ inputs.application_uuid }}"
-          fi
-          echo "Nombre para exportación: $export_name"
-          echo "export_name=$export_name" >> $GITHUB_OUTPUT
 
       - name: Validar URL
         run: |
@@ -127,9 +91,9 @@ jobs:
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
           --header "Action-Type: export" \
           --form 'json={
-            "exportType": "${{ inputs.export_type }}",
+            "exportType": "package",
             "uuids": ["${{ steps.obtener_uuid.outputs.deployment_uuid }}"],
-            "name": "${{ steps.definir_nombre_export.outputs.export_name }}",
+            "name": "${{ inputs.package_name }}",
             "description": "${{ inputs.description }}"
           }' \
           --output export_response.json
@@ -175,26 +139,26 @@ jobs:
 
           curl --location --request GET "$package_url" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
-          --output "packages/${{ steps.definir_nombre_export.outputs.export_name }}/${{ steps.definir_nombre_export.outputs.export_name }}.zip"
+          --output "packages/${{ inputs.package_name }}/${{ inputs.package_name }}.zip"
 
       - name: Confirmar paquete exportado
-        run: ls -lh "packages/${{ steps.definir_nombre_export.outputs.export_name }}"
+        run: ls -lh "packages/${{ inputs.package_name }}"
 
       - name: Subir artefacto del paquete exportado
         uses: actions/upload-artifact@v4
         with:
-          name: paquete-${{ steps.definir_nombre_export.outputs.export_name }}
-          path: packages/${{ steps.definir_nombre_export.outputs.export_name }}/${{ steps.definir_nombre_export.outputs.export_name }}.zip
+          name: paquete-${{ inputs.package_name }}
+          path: packages/${{ inputs.package_name }}/${{ inputs.package_name }}.zip
 
       - name: Guardar paquete en el repositorio
         run: |
           mkdir -p deployments/dev
-          cp "packages/${{ steps.definir_nombre_export.outputs.export_name }}/${{ steps.definir_nombre_export.outputs.export_name }}.zip" "deployments/dev/${{ steps.definir_nombre_export.outputs.export_name }}.zip"
+          cp "packages/${{ inputs.package_name }}/${{ inputs.package_name }}.zip" "deployments/dev/${{ inputs.package_name }}.zip"
 
       - name: Hacer commit del paquete exportado
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add "deployments/dev/${{ steps.definir_nombre_export.outputs.export_name }}.zip"
-          git commit -m "Add exported package ${{ steps.definir_nombre_export.outputs.export_name }}.zip"
+          git add "deployments/dev/${{ inputs.package_name }}.zip"
+          git commit -m "Add exported package ${{ inputs.package_name }}.zip"
           git push

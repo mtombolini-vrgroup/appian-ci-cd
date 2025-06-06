@@ -123,6 +123,11 @@ jobs:
           }' \
           --output export_response.json
 
+      - name: Verificar respuesta cruda de exportación
+        run: |
+          echo "🔍 Contenido de export_response.json:"
+          cat export_response.json
+
       - name: Extraer UUID de la exportación
         id: extract_uuid
         run: |

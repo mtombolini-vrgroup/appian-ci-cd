@@ -165,6 +165,14 @@ jobs:
         run: |
           package_url=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" | jq -r '.packageZip')
+
+          echo "URL del packageZip: $package_url"
+
+          if [ -z "$package_url" ] || [ "$package_url" == "null" ]; then
+            echo "❌ No se encontró packageZip. La aplicación fue exportada pero no hay ZIP disponible."
+            exit 1
+          fi
+
           curl --location --request GET "$package_url" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
           --output "packages/${{ steps.definir_nombre_export.outputs.export_name }}/${{ steps.definir_nombre_export.outputs.export_name }}.zip"

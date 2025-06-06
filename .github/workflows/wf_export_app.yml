@@ -1,0 +1,110 @@
+
+
+name: Exportar aplicación Appian
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_uuid:
+        description: "UUID de la aplicación a exportar"
+        required: true
+        type: string
+      description:
+        description: "Descripción del export"
+        required: false
+        type: string
+
+jobs:
+  export_app:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Validar URL
+        run: |
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
+            exit 1
+          fi
+
+      - name: Exportar aplicación desde Appian Dev
+        run: |
+          curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/deployments" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
+          --header "Action-Type: export" \
+          --form 'json={
+            "exportType": "application",
+            "uuids": ["${{ inputs.application_uuid }}"],
+            "name": "Export App - ${{ inputs.application_uuid }}",
+            "description": "${{ inputs.description }}"
+          }' \
+          --output export_response.json
+
+      - name: Verificar respuesta cruda de exportación
+        run: |
+          echo "🔍 Contenido de export_response.json:"
+          cat export_response.json
+
+      - name: Extraer UUID de la exportación
+        id: extract_uuid
+        run: |
+          export_uuid=$(jq -r '.uuid' export_response.json)
+          echo "UUID de exportación: $export_uuid"
+          echo "export_uuid=$export_uuid" >> $GITHUB_OUTPUT
+
+      - name: Esperar a que la exportación se complete
+        run: |
+          status="IN_PROGRESS"
+          while [ "$status" == "IN_PROGRESS" ]; do
+            sleep 10
+            response=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}")
+            status=$(echo $response | jq -r '.status')
+            echo "Estado actual: $status"
+          done
+          if [ "$status" != "COMPLETED" ]; then
+            echo "La exportación falló con estado: $status"
+            exit 1
+          fi
+
+      - name: Descargar aplicación exportada
+        run: |
+          package_url=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/deployments/${{ steps.extract_uuid.outputs.export_uuid }}" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" | jq -r '.packageZip')
+
+          echo "URL del packageZip: $package_url"
+
+          if [ -z "$package_url" ] || [ "$package_url" == "null" ]; then
+            echo "❌ No se encontró packageZip. La aplicación fue exportada pero no hay ZIP disponible."
+            exit 1
+          fi
+
+          mkdir -p "packages/Export App - ${{ inputs.application_uuid }}"
+          curl --location --request GET "$package_url" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
+          --output "packages/Export App - ${{ inputs.application_uuid }}/Export App - ${{ inputs.application_uuid }}.zip"
+
+      - name: Confirmar aplicación exportada
+        run: ls -lh "packages/Export App - ${{ inputs.application_uuid }}"
+
+      - name: Subir artefacto de la aplicación exportada
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ inputs.application_uuid }}
+          path: packages/Export App - ${{ inputs.application_uuid }}/Export App - ${{ inputs.application_uuid }}.zip
+
+      - name: Guardar aplicación en el repositorio
+        run: |
+          mkdir -p deployments/dev
+          cp "packages/Export App - ${{ inputs.application_uuid }}/Export App - ${{ inputs.application_uuid }}.zip" "deployments/dev/Export App - ${{ inputs.application_uuid }}.zip"
+
+      - name: Hacer commit de la aplicación exportada
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add "deployments/dev/Export App - ${{ inputs.application_uuid }}.zip"
+          git commit -m "Add exported application Export App - ${{ inputs.application_uuid }}.zip"
+          git push

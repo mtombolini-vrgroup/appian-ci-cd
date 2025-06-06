@@ -1,0 +1,51 @@
+
+
+name: Pipeline Despliegue Aplicación Dev -> QA -> (opcional Prod)
+
+on:
+  workflow_dispatch:
+    inputs:
+      application_uuid:
+        description: "UUID de la aplicación a desplegar"
+        required: true
+      description:
+        description: "Descripción del despliegue"
+        required: false
+      deploy_to_prod:
+        description: "¿Promover también a Producción?"
+        required: true
+        type: choice
+        options:
+          - "true"
+          - "false"
+        default: "false"
+
+jobs:
+  exportar_app:
+    uses: ./.github/workflows/wf_export_app.yml
+    with:
+      application_uuid: ${{ inputs.application_uuid }}
+      description: ${{ inputs.description }}
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}
+
+  importar_qa:
+    needs: exportar_app
+    uses: ./.github/workflows/wf_import.yml
+    with:
+      package_name: Export App - ${{ inputs.application_uuid }}
+      description: ${{ inputs.description }}
+      environment_name: qa
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}
+
+  importar_prod:
+    if: ${{ inputs.deploy_to_prod == 'true' }}
+    needs: importar_qa
+    uses: ./.github/workflows/wf_import.yml
+    with:
+      package_name: Export App - ${{ inputs.application_uuid }}
+      description: ${{ inputs.description }}
+      environment_name: prod
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}

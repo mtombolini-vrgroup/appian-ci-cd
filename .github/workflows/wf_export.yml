@@ -9,6 +9,11 @@ on:
       description:
         required: false
         type: string
+      export_type:
+        description: "Tipo de exportación"
+        required: false
+        type: string
+        default: package
     secrets:
       API_KEY:
         required: true
@@ -22,6 +27,14 @@ on:
         description: "Descripción del paquete"
         required: false
         type: string
+      export_type:
+        description: "Tipo de exportación"
+        required: false
+        type: choice
+        options:
+          - package
+          - application
+        default: package
 
 jobs:
   export-package:
@@ -91,7 +104,7 @@ jobs:
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
           --header "Action-Type: export" \
           --form 'json={
-            "exportType": "package",
+            "exportType": "${{ inputs.export_type }}",
             "uuids": ["${{ steps.obtener_uuid.outputs.deployment_uuid }}"],
             "name": "${{ inputs.package_name }}",
             "description": "${{ inputs.description }}"

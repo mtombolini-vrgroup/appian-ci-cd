@@ -81,8 +81,13 @@ jobs:
         id: obtener_uuid
         run: |
           deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ inputs.package_name }}")) | $app["${{ inputs.package_name }}"]' config/packages_result.json)
+          app_name=$(jq -r --arg pkg "${{ inputs.package_name }}" 'to_entries[] | select(.value | has($pkg)) | .key' config/packages_result.json)
+
           echo "UUID resuelto: $deployment_uuid"
+          echo "App Name resuelto: $app_name"
+
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
 
       - name: Validar URL
         run: |

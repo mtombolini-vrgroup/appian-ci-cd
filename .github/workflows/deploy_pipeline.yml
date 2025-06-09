@@ -20,8 +20,17 @@ jobs:
     secrets:
       API_KEY: ${{ secrets.API_KEY }}
 
-  importar_qa:
+  inspeccionar_qa:
     needs: exportar
+    uses: ./.github/workflows/wf_inspect.yml
+    with:
+      package_name: ${{ inputs.package_name }}
+      description: ${{ inputs.description }}
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}
+
+  importar_qa:
+    needs: inspeccionar_qa
     uses: ./.github/workflows/wf_import.yml
     with:
       package_name: ${{ inputs.package_name }}
@@ -30,8 +39,18 @@ jobs:
     secrets:
       API_KEY: ${{ secrets.API_KEY }}
 
-  importar_prod:
+  inspeccionar_prod:
     needs: importar_qa
+    uses: ./.github/workflows/wf_inspect.yml
+    with:
+      package_name: ${{ inputs.package_name }}
+      description: ${{ inputs.description }}
+      environment_name: prod
+    secrets:
+      API_KEY: ${{ secrets.API_KEY }}
+
+  importar_prod:
+    needs: inspeccionar_prod
     uses: ./.github/workflows/wf_import.yml
     with:
       package_name: ${{ inputs.package_name }}

@@ -11,6 +11,10 @@ on:
         description: "Descripción de la inspección"
         required: false
         type: string
+      environment_name:
+        description: "Nombre del entorno (qa, prod, etc.)"
+        required: true
+        type: string
 
   workflow_call:
     inputs:

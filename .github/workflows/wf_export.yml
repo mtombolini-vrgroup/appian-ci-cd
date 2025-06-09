@@ -184,9 +184,11 @@ jobs:
       - name: Hacer commit del paquete exportado
         run: |
           PACKAGE_FILENAME=${{ steps.definir_path.outputs.package_filename }}
+          YEAR="${{ steps.definir_path.outputs.year }}"
+          MONTH="${{ steps.definir_path.outputs.month }}"
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add "deployments/dev/${{ steps.obtener_uuid.outputs.app_name }}/${{ steps.definir_path.outputs.year }}/${{ steps.definir_path.outputs.month }}/$PACKAGE_FILENAME.zip"
-          git commit -m "Add exported package $PACKAGE_FILENAME.zip (${ { steps.definir_path.outputs.year } }-${{ steps.definir_path.outputs.month }})"
+          git commit -m "Add exported package $PACKAGE_FILENAME.zip ($YEAR-$MONTH)"
           git push

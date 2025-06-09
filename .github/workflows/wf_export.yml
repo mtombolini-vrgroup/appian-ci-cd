@@ -68,8 +68,14 @@ jobs:
             fi
           done
 
-      - name: Crear directorio para el paquete exportado
-        run: mkdir -p "packages/${{ inputs.package_name }}"
+      - name: Crear directorio para el paquete exportado (ordenado por app/año/mes)
+        run: |
+          APP_NAME="${{ inputs.package_name }}"
+          YEAR=$(date +'%Y')
+          MONTH=$(date +'%m')
+          EXPORT_PATH="packages/$APP_NAME/$YEAR/$MONTH"
+          echo "📁 Creando directorio: $EXPORT_PATH"
+          mkdir -p "$EXPORT_PATH"
 
       - name: Obtener UUID del paquete desde JSON local
         id: obtener_uuid
@@ -139,26 +145,27 @@ jobs:
 
           curl --location --request GET "$package_url" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
-          --output "packages/${{ inputs.package_name }}/${{ inputs.package_name }}.zip"
+          --output "packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
 
       - name: Confirmar paquete exportado
-        run: ls -lh "packages/${{ inputs.package_name }}"
+        run: ls -lh "packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')"
 
       - name: Subir artefacto del paquete exportado
         uses: actions/upload-artifact@v4
         with:
           name: paquete-${{ inputs.package_name }}
-          path: packages/${{ inputs.package_name }}/${{ inputs.package_name }}.zip
+          path: packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip
 
       - name: Guardar paquete en el repositorio
         run: |
-          mkdir -p deployments/dev
-          cp "packages/${{ inputs.package_name }}/${{ inputs.package_name }}.zip" "deployments/dev/${{ inputs.package_name }}.zip"
+          mkdir -p deployments/dev/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')
+          cp "packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip" \
+            "deployments/dev/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
 
       - name: Hacer commit del paquete exportado
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add "deployments/dev/${{ inputs.package_name }}.zip"
-          git commit -m "Add exported package ${{ inputs.package_name }}.zip"
+          git add "deployments/dev/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
+          git commit -m "Add exported package ${{ inputs.package_name }}.zip ($(date +'%Y-%m'))"
           git push

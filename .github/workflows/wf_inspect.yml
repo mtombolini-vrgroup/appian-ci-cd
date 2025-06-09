@@ -1,0 +1,72 @@
+
+
+name: Inspeccionar paquete o aplicación Appian
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: "Nombre lógico del paquete o aplicación (correspondiente al nombre del ZIP en deployments/dev)"
+        required: true
+        type: string
+      description:
+        description: "Descripción de la inspección"
+        required: false
+        type: string
+
+jobs:
+  inspeccionar:
+    runs-on: ubuntu-latest
+    environment: qa
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validar URL
+        run: |
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
+            exit 1
+          fi
+
+      - name: Verificar existencia del paquete
+        run: |
+          echo "Verificando existencia del archivo deployments/dev/${{ inputs.package_name }}.zip"
+          if [ ! -f "deployments/dev/${{ inputs.package_name }}.zip" ]; then
+            echo "❌ El archivo no existe: deployments/dev/${{ inputs.package_name }}.zip"
+            exit 1
+          fi
+
+      - name: Ejecutar inspección en Appian
+        run: |
+          curl --location --request POST "${{ vars.URL }}/suite/deployment-management/v2/inspections" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" \
+          --header "Action-Type: inspect" \
+          --form 'json={
+            "name": "Inspección - ${{ inputs.package_name }}",
+            "description": "${{ inputs.description }}",
+            "packageFileName": "${{ inputs.package_name }}.zip"
+          }' \
+          --form "packageFileName=@deployments/dev/${{ inputs.package_name }}.zip" \
+          --output inspection_response.json
+
+      - name: Verificar respuesta cruda de inspección
+        run: |
+          echo "🔍 Contenido de inspection_response.json:"
+          cat inspection_response.json
+
+      - name: Extraer UUID de la inspección
+        id: extract_uuid
+        run: |
+          inspection_uuid=$(jq -r '.uuid' inspection_response.json)
+          echo "UUID de inspección: $inspection_uuid"
+          echo "inspection_uuid=$inspection_uuid" >> $GITHUB_OUTPUT
+
+      - name: Subir UUID de inspección como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspection-uuid
+          path: inspection_response.json

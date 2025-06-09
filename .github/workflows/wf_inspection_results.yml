@@ -1,0 +1,44 @@
+
+
+name: Consultar resultado de inspección Appian
+
+on:
+  workflow_dispatch:
+    inputs:
+      inspection_uuid:
+        description: "UUID de la inspección a consultar"
+        required: true
+        type: string
+
+jobs:
+  consultar_resultado_inspeccion:
+    runs-on: ubuntu-latest
+    environment: qa
+
+    steps:
+      - name: Validar URL
+        run: |
+          if [ -z "${{ vars.URL }}" ]; then
+            echo "❌ Error: URL no está definido."
+            exit 1
+          fi
+
+      - name: Consultar resultado de la inspección
+        run: |
+          status="IN_PROGRESS"
+          while [ "$status" == "IN_PROGRESS" ]; do
+            sleep 10
+            response=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/inspections/${{ inputs.inspection_uuid }}" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}")
+            status=$(echo $response | jq -r '.status')
+            echo "Estado actual de la inspección: $status"
+          done
+          if [ "$status" != "COMPLETED" ]; then
+            echo "La inspección terminó con estado: $status"
+            exit 1
+          fi
+
+      - name: Mostrar detalle completo de la inspección
+        run: |
+          curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/inspections/${{ inputs.inspection_uuid }}" \
+          --header "appian-api-key: ${{ secrets.API_KEY }}" | jq .

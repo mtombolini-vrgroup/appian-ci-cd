@@ -68,15 +68,6 @@ jobs:
             fi
           done
 
-      - name: Crear directorio para el paquete exportado (ordenado por app/año/mes)
-        run: |
-          APP_NAME="${{ steps.obtener_uuid.outputs.app_name }}"
-          YEAR=$(date +'%Y')
-          MONTH=$(date +'%m')
-          EXPORT_PATH="packages/$APP_NAME/$YEAR/$MONTH"
-          echo "📁 Creando directorio: $EXPORT_PATH"
-          mkdir -p "$EXPORT_PATH"
-
       - name: Obtener UUID del paquete desde JSON local
         id: obtener_uuid
         run: |
@@ -135,6 +126,16 @@ jobs:
             echo "La exportación falló con estado: $status"
             exit 1
           fi
+          echo "✅ Exportación completada con éxito."
+
+      - name: Crear directorio para el paquete exportado (ordenado por app/año/mes)
+        run: |
+          APP_NAME="${{ steps.obtener_uuid.outputs.app_name }}"
+          YEAR=$(date +'%Y')
+          MONTH=$(date +'%m')
+          EXPORT_PATH="packages/$APP_NAME/$YEAR/$MONTH"
+          echo "📁 Creando directorio: $EXPORT_PATH"
+          mkdir -p "$EXPORT_PATH"
 
       - name: Descargar paquete exportado
         run: |

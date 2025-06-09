@@ -70,7 +70,7 @@ jobs:
 
       - name: Crear directorio para el paquete exportado (ordenado por app/año/mes)
         run: |
-          APP_NAME="${{ inputs.package_name }}"
+          APP_NAME="${{ steps.obtener_uuid.outputs.app_name }}"
           YEAR=$(date +'%Y')
           MONTH=$(date +'%m')
           EXPORT_PATH="packages/$APP_NAME/$YEAR/$MONTH"

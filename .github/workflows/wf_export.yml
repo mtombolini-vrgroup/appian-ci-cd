@@ -70,19 +70,30 @@ jobs:
 
       - name: Crear directorio para el paquete exportado (ordenado por app/año/mes)
         run: |
-          APP_NAME="${{ inputs.package_name }}"
           YEAR=$(date +'%Y')
           MONTH=$(date +'%m')
-          EXPORT_PATH="packages/$APP_NAME/$YEAR/$MONTH"
+          EXPORT_PATH="packages/${{ steps.obtener_uuid.outputs.app_name }}/$YEAR/$MONTH"
           echo "📁 Creando directorio: $EXPORT_PATH"
+
+          # Validar que la aplicación esté registrada (directorio deployments/dev/app_name debe existir)
+          if [ ! -d "deployments/dev/${{ steps.obtener_uuid.outputs.app_name }}" ]; then
+            echo "❌ La aplicación '${{ steps.obtener_uuid.outputs.app_name }}' no está registrada (directorio 'deployments/dev/${{ steps.obtener_uuid.outputs.app_name }}' no existe)."
+            exit 1
+          fi
+
           mkdir -p "$EXPORT_PATH"
 
       - name: Obtener UUID del paquete desde JSON local
         id: obtener_uuid
         run: |
           deployment_uuid=$(jq -r 'to_entries[] | .value as $app | select($app | has("${{ inputs.package_name }}")) | $app["${{ inputs.package_name }}"]' config/packages_result.json)
+          app_name=$(jq -r --arg pkg "${{ inputs.package_name }}" 'to_entries[] | select(.value | has($pkg)) | .key' config/packages_result.json)
+
           echo "UUID resuelto: $deployment_uuid"
+          echo "App Name resuelto: $app_name"
+
           echo "deployment_uuid=$deployment_uuid" >> $GITHUB_OUTPUT
+          echo "app_name=$app_name" >> $GITHUB_OUTPUT
 
       - name: Validar URL
         run: |
@@ -145,27 +156,27 @@ jobs:
 
           curl --location --request GET "$package_url" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" \
-          --output "packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
+          --output "packages/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
 
       - name: Confirmar paquete exportado
-        run: ls -lh "packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')"
+        run: ls -lh "packages/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')"
 
       - name: Subir artefacto del paquete exportado
         uses: actions/upload-artifact@v4
         with:
           name: paquete-${{ inputs.package_name }}
-          path: packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip
+          path: packages/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip
 
       - name: Guardar paquete en el repositorio
         run: |
-          mkdir -p deployments/dev/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')
-          cp "packages/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip" \
-            "deployments/dev/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
+          mkdir -p deployments/dev/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')
+          cp "packages/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip" \
+            "deployments/dev/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
 
       - name: Hacer commit del paquete exportado
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add "deployments/dev/${{ inputs.package_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
+          git add "deployments/dev/${{ steps.obtener_uuid.outputs.app_name }}/$(date +'%Y')/$(date +'%m')/${{ inputs.package_name }}.zip"
           git commit -m "Add exported package ${{ inputs.package_name }}.zip ($(date +'%Y-%m'))"
           git push

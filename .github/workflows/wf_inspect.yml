@@ -1,5 +1,3 @@
-
-
 name: Inspeccionar paquete o aplicación Appian
 
 on:
@@ -84,11 +82,15 @@ jobs:
           echo "Errores encontrados en la inspección: $total_errors"
 
           if [ "$total_errors" != "0" ]; then
-            echo "❌ La inspección contiene errores. Deteniendo el workflow."
+            echo "❌ La inspección contiene errores. Mostrando detalle completo:"
+            curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/inspections/${{ steps.extract_uuid.outputs.inspection_uuid }}" \
+              --header "appian-api-key: ${{ secrets.API_KEY }}" | jq .
+            echo "❌ Deteniendo el workflow."
             exit 1
           fi
 
       - name: Mostrar detalle completo de la inspección
+        if: always()
         run: |
           curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/inspections/${{ steps.extract_uuid.outputs.inspection_uuid }}" \
           --header "appian-api-key: ${{ secrets.API_KEY }}" | jq .

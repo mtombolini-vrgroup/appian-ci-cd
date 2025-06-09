@@ -26,6 +26,7 @@ jobs:
     with:
       package_name: ${{ inputs.package_name }}
       description: ${{ inputs.description }}
+      environment_name: qa
     secrets:
       API_KEY: ${{ secrets.API_KEY }}
 

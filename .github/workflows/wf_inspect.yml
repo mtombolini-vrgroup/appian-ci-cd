@@ -77,6 +77,17 @@ jobs:
             exit 1
           fi
 
+          # Validar si hubo errores de inspección
+          total_errors=$(curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/inspections/${{ steps.extract_uuid.outputs.inspection_uuid }}" \
+            --header "appian-api-key: ${{ secrets.API_KEY }}" | jq -r '.summary.problems.totalErrors')
+
+          echo "Errores encontrados en la inspección: $total_errors"
+
+          if [ "$total_errors" != "0" ]; then
+            echo "❌ La inspección contiene errores. Deteniendo el workflow."
+            exit 1
+          fi
+
       - name: Mostrar detalle completo de la inspección
         run: |
           curl --location --request GET "${{ vars.URL }}/suite/deployment-management/v2/inspections/${{ steps.extract_uuid.outputs.inspection_uuid }}" \

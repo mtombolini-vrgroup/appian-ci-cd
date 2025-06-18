@@ -61,10 +61,26 @@ jobs:
 
               # Extraer el UUID de la exportación
               export_uuid=$(jq -r '.uuid' export_response.json)
+              status=$(jq -r '.status' export_response.json)
               package_url=$(jq -r '.packageZip' export_response.json)
 
-              if [ -n "$export_uuid" ] && [ "$package_url" != "null" ] && [ -n "$package_url" ]; then
-              echo "✅ Exportación válida. Registrando UUID en apps_config.json..."
+              if [ "$status" == "IN_PROGRESS" ] && [ -n "$export_uuid" ] && [ "$export_uuid" != "null" ]; then
+                echo "✅ Registrando UUID de la aplicación en apps_config.json..."
+                mkdir -p config
+                if [ ! -f config/apps_config.json ]; then
+                  echo "{}" > config/apps_config.json
+                fi
+                jq --arg uuid "${{ inputs.application_uuid }}" --arg export_uuid "$export_uuid" \
+                  '.[$uuid] = { "export_uuid": $export_uuid } + (.[ $uuid ] // {})' \
+                  config/apps_config.json > config/apps_config.tmp && mv config/apps_config.tmp config/apps_config.json
+                echo "apps_config.json actualizado:"
+                cat config/apps_config.json
+              else
+                echo "❌ Exportación inválida o sin packageZip. No se registrará el UUID de la aplicación."
+              fi package_url=$(jq -r '.packageZip' export_response.json)
+
+              if [ -n "$export_uuid" ]; then
+              echo "✅ Registrando UUID en apps_config.json..."
               mkdir -p config
               if [ ! -f config/apps_config.json ]; then
                 echo "{}" > config/apps_config.json
@@ -75,7 +91,7 @@ jobs:
               echo "apps_config.json actualizado:"
               cat config/apps_config.json
               else
-              echo "❌ Exportación inválida o sin packageZip. No se registrará el UUID."
+              echo "❌ No se encontró export_uuid. No se registrará el UUID."
               fi
 
       - name: Extraer UUID de la exportación

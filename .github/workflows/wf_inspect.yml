@@ -52,6 +52,11 @@ jobs:
           git config --global user.name "github-actions"
           git pull origin $(git rev-parse --abbrev-ref HEAD)
 
+      - name: Listar contenido del directorio de paquetes
+        run: |
+          echo "Contenido de deployments/dev:"
+          ls -lh deployments/dev
+
       - name: Validar URL
         run: |
           if [ -z "${{ vars.URL }}" ]; then

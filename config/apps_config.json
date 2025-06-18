@@ -1,3 +1,6 @@
 {
-  "cicd_manager": "8f484264-67af-4213-b368-6d39dbe01b98"
+  "cicd_manager": "8f484264-67af-4213-b368-6d39dbe01b98",
+  "708abb3a-6e1b-481c-a2ab-ee4dc09795db": {
+    "export_uuid": "682c930d-cce7-4870-8ad4-70682245effa"
+  }
 }

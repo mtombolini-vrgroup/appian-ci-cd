@@ -46,12 +46,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Descargar artefacto exportado
-        uses: actions/download-artifact@v4
-        with:
-          name: app-${{ inputs.package_name }}
-          path: deployments/dev
-
       - name: Validar URL
         run: |
           if [ -z "${{ vars.URL }}" ]; then

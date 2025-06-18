@@ -54,13 +54,8 @@ jobs:
 
       - name: Verificar respuesta cruda de exportación
         run: |
-              echo "🔍 Contenido de export_response.json:"
-              cat export_response.json
-
-              # Extraer el UUID de la exportación
-              export_uuid=$(jq -r '.uuid' export_response.json)
-              status=$(jq -r '.status' export_response.json)
-              package_url=$(jq -r '.packageZip' export_response.json)
+          echo "🔍 Contenido de export_response.json:"
+          cat export_response.json
 
       - name: Extraer UUID de la exportación
         id: extract_uuid
@@ -71,17 +66,18 @@ jobs:
 
       - name: Registrar UUID de la aplicación
         run: |
-          export_uuid="${{ steps.extract_uuid.outputs.export_uuid }}"
+          # Determinar nombre de la aplicación desde export_response.json
+          app_name=$(jq -r '.name' export_response.json)
           mkdir -p config
           if [ ! -f config/apps_config.json ]; then
             echo "{}" > config/apps_config.json
           fi
-          jq --arg app_uuid "${{ inputs.application_uuid }}" --arg export_uuid "$export_uuid" \
-            '.[$app_uuid] = { "export_uuid": $export_uuid } + (.[ $app_uuid ] // {})' \
+          # Registrar sólo el UUID de la aplicación usando su nombre como clave
+          jq --arg key "$app_name" --arg uuid "${{ inputs.application_uuid }}" \
+            '.[$key] = $uuid' \
             config/apps_config.json > config/apps_config.tmp && mv config/apps_config.tmp config/apps_config.json
           echo "apps_config.json actualizado:"
           cat config/apps_config.json
-
 
       - name: Esperar a que la exportación se complete
         run: |

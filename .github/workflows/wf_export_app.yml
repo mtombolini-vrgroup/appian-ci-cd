@@ -82,6 +82,7 @@ jobs:
           echo "apps_config.json actualizado:"
           cat config/apps_config.json
 
+
       - name: Esperar a que la exportación se complete
         run: |
           status="IN_PROGRESS"
@@ -128,10 +129,10 @@ jobs:
           mkdir -p deployments/dev
           cp "packages/Export App - ${{ inputs.application_uuid }}/Export App - ${{ inputs.application_uuid }}.zip" "deployments/dev/Export App - ${{ inputs.application_uuid }}.zip"
 
-      - name: Hacer commit de la aplicación exportada
+      - name: Commit configuración y aplicación exportada
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add "deployments/dev/Export App - ${{ inputs.application_uuid }}.zip"
-          git commit -m "Add exported application Export App - ${{ inputs.application_uuid }}.zip"
+          git add config/apps_config.json "deployments/dev/Export App - ${{ inputs.application_uuid }}.zip"
+          git commit -m "Update apps_config.json and add exported application for ${{ inputs.application_uuid }}"
           git push
